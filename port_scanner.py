@@ -10,13 +10,37 @@ COMMON_PORTS = {
 }
 
 def scan_port(target, port, open_ports):
-    # TODO: tek bir portu tara, aciksa listeye ekle
-    pass
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1)
+    result = sock.connect_ex((target, port))
+    if result == 0:
+        service = COMMON_PORTS.get(port, "Bilinmiyor")
+        open_ports.append((port, service))
+    sock.close()
 
 def scan(target, ports):
-    # TODO: her port icin bir thread baslat, hepsini bekle
-    pass
+    open_ports = []
+    threads = []
+
+    print(f"[*] {target} taraniyor...")
+    start = datetime.now()
+
+    for port in ports:
+        t = threading.Thread(target=scan_port, args=(target, port, open_ports))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    elapsed = (datetime.now() - start).total_seconds()
+    print(f"[*] Tarama {elapsed:.2f} saniyede bitti\n")
+
+    for port, service in sorted(open_ports):
+        print(f"[+] Port {port} ACIK - {service}")
+
+    return open_ports
 
 if __name__ == "__main__":
-    # TODO: ornek tarama
-    pass
+    target = "scanme.nmap.org"  # Nmap'in test için acik biraktigi sunucu
+    scan(target, list(COMMON_PORTS.keys()))
